@@ -25,15 +25,6 @@ def set_codes(arr):
             codes.append('-')
         return tuple(codes)
 
-def plot_indicator(id, edition):
-    global GCI
-    gci = get_gci() if GCI is None else GCI
-    indicator = gci[id].xs(edition, level='Edition').dropna()
-    column_name = metadata.loc[metadata['id'] == id, 'Series unindented'].iloc[0]
-    data = pd.DataFrame(indicator.values, columns=[column_name], index=indicator.index)
-    data.plot(kind='bar')
-    plt.show()
-
 def get_gci():
     raw_data = pd.read_csv(DATADIR + '/GCI_Dataset_2006-2015.data.csv')
     raw_data_2 = raw_data[raw_data.Attribute.isin(['Value'])].drop(
@@ -53,5 +44,21 @@ def get_gci():
     gci = raw_data_3.pivot_table('value', ['entity', 'Edition'],
                                  ['id', 'GLOBAL ID', 'code_1', 'code_2', 'code_3', 'code_4', 'code_5', 'code_6'])
     return gci
+
+def get_indicators(ids, edition):
+    global GCI
+    gci = get_gci() if GCI is None else GCI
+    ids = [ids] if hasattr(ids, 'upper') else ids
+    indicators = gci[ids].xs(edition, level='Edition').dropna()
+    # column_names = metadata.loc[metadata['id'].isin(list(ids)), 'Series unindented']
+    column_names = [metadata.loc[metadata['id'] == _id, 'Series unindented'].iloc[0] for _id in ids]
+    return pd.DataFrame(indicators.values, columns=list(column_names), index=indicators.index)
+
+def plot_indicator(ids, edition):
+    global GCI
+    gci = get_gci() if GCI is None else GCI
+    data = get_indicators(ids, edition)
+    data.plot(kind='bar')
+    plt.show()
 
 gci = get_gci()
