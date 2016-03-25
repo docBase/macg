@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-from metadata import metadata
+
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
+
+from metadata import metadata
 
 pd.set_option('display.width', None)
 style.use('ggplot')
