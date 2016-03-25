@@ -20,7 +20,7 @@ plt.rcParams['font.family'] = 'sans-serif'
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 DATADIR = os.path.join(BASEDIR, '..', '..', 'data')
 OUTPUTDIR = os.path.join(BASEDIR, '..', '..', 'output')
-DEFAULT_PRECISION = np.float128(0.000001)
+DEFAULT_PRECISION = np.float128(0.000000001)
 TRANSFORMATIONS = [('divide_xis', {'min_num_parts': 1, 'max_num_parts': 6})]
 
 def get_I(k, i):
@@ -254,6 +254,8 @@ if __name__ == "__main__":
     ids = [sys.argv[1], sys.argv[2]]
     edition = sys.argv[3]
     basename = '-'.join(ids + [edition.replace('-', '_')]).replace('.', '_')
+    if not os.path.exists(OUTPUTDIR):
+        os.makedirs(OUTPUTDIR)
     dfxo = gci.get_indicators(ids, edition)
     fig1, fig2, best_transformation = analyze(dfxo)
     fig1.savefig(OUTPUTDIR + '/' + basename + '_fig1.png')
