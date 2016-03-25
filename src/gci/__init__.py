@@ -52,7 +52,10 @@ def get_indicators(ids, edition):
     indicators = gci[ids].xs(edition, level='Edition').dropna()
     # column_names = metadata.loc[metadata['id'].isin(list(ids)), 'Series unindented']
     column_names = [metadata.loc[metadata['id'] == _id, 'Series unindented'].iloc[0] for _id in ids]
-    return pd.DataFrame(indicators.values, columns=list(column_names), index=indicators.index)
+    data = pd.DataFrame(indicators.values, columns=list(column_names), index=indicators.index)
+    for col in column_names:
+        data[col] = data[col].astype('float128')
+    return data
 
 def plot_indicator(ids, edition):
     global GCI
