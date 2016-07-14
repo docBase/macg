@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -18,8 +19,8 @@ plt.rcParams['figure.figsize'] = (20, 10)
 plt.rcParams['font.family'] = 'sans-serif'
 
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
-DATADIR = os.path.join(BASEDIR, '..', '..', 'data')
-OUTPUTDIR = os.path.join(BASEDIR, '..', '..', 'output')
+DATADIR = os.path.abspath(os.path.join(BASEDIR, '..', '..', 'data'))
+OUTPUTDIR = os.path.abspath(os.path.join(BASEDIR, '..', '..', 'output'))
 DEFAULT_PRECISION = np.float128(0.000000001)
 TRANSFORMATIONS = [('divide_xis', {'min_num_parts': 1, 'max_num_parts': 6})]
 
@@ -217,6 +218,59 @@ def get_best_transformation(dfxots):
             best_transformation = key
     return best_transformation, dfxots[best_transformation]
 
+def geometrical_interpolation(col1, col2, jjj):
+    if not pd.isnull(col1.iloc[jjj]) or jjj == 0 or jjj == len(col1) - 1:
+        x = col1.iloc[jjj]
+    else:
+        iii = jjj - 1
+        while pd.isnull(col1.iloc[iii]):
+            if iii == 0:
+                break
+            else:
+                iii -= 1
+        kkk = jjj + 1
+        while pd.isnull(col1.iloc[kkk]):
+            kkk += 1
+        x1 = col1.iloc[iii]
+        x2 = col1.iloc[kkk]
+        y1 = col2.iloc[iii]
+        y2 = col2.iloc[kkk]
+        y = col2.iloc[jjj]
+        x = x1 + (x1 - x2) * (y - y1) / (y1 - y2)
+    return x
+
+def plot_interpolated_xts(dfxot):
+    constant_step = pd.DataFrame(([None, x/100] for x in range(0,101)), columns=[0, 'xt_0'])
+    xt_0 = dfxot[[0, 'xt_0']].append(constant_step, ignore_index=True)
+    xt_0[0] = xt_0[0].astype(np.float64)
+    xt_0.drop_duplicates(['xt_0'], inplace=True)
+    xt_0.sort_values('xt_0', inplace=True)
+    xt_0.reset_index(drop=True, inplace=True)
+    # xt_0.interpolate(method='linear', inplace=True)
+    # xt_0.interpolate(method='cubic', inplace=True)
+    xt_0[0] = xt_0.apply(lambda row: geometrical_interpolation(xt_0[0], xt_0['xt_0'], row.name), axis=1)
+    xt_0.reset_index(drop=True, inplace=True)
+
+    constant_step = pd.DataFrame(([None, x/100] for x in range(0,101)), columns=[1, 'xt_1'])
+    xt_1 = dfxot[[1, 'xt_1']].append(constant_step, ignore_index=True)
+    xt_1[1] = xt_1[1].astype(np.float64)
+    xt_1.drop_duplicates(['xt_1'], inplace=True)
+    xt_1.sort_values('xt_1', inplace=True)
+    xt_1.reset_index(drop=True, inplace=True)
+    # xt_1.interpolate(method='linear', inplace=True)
+    # xt_1.interpolate(method='cubic', inplace=True)
+    xt_1[1] = xt_1.apply(lambda row: geometrical_interpolation(xt_1[1], xt_1['xt_1'], row.name), axis=1)
+    xt_1.reset_index(drop=True, inplace=True)
+    xt_1
+
+    xt_n = pd.merge(xt_0, xt_1, how='inner', left_on='xt_0', right_on='xt_1')
+
+    fig3, sp31 = plt.subplots(1)
+    fig3.set_size_inches(10, 10)
+    sp31.plot(xt_n[0], xt_n[1], 'bo-')
+    sp31.plot(dfxot[0], dfxot[1], 'ro')
+    return fig3
+
 def plot_transformation(dfxot):
     fig2, ((sp21, sp22), (sp23, sp24)) = plt.subplots(2, 2)
     fig2.set_size_inches(20, 20)
@@ -248,7 +302,13 @@ def analyze(dfxo):
     fig1, dfxots = plot_transformations(dfxo)
     best_transformation, dfxot = get_best_transformation(dfxots)
     fig2 = plot_transformation(dfxot)
-    return fig1, fig2, best_transformation
+    fig3 = plot_interpolated_xts(dfxot)
+    print('total points: {}'.format(len(dfxo)))
+    return fig1, fig2, fig3, best_transformation
+
+def savefig(fig, path):
+    fig.savefig(path)
+    print('saved {}'.format(path))
 
 if __name__ == "__main__":
     ids = [sys.argv[1], sys.argv[2]]
@@ -257,10 +317,13 @@ if __name__ == "__main__":
     if not os.path.exists(OUTPUTDIR):
         os.makedirs(OUTPUTDIR)
     dfxo = gci.get_indicators(ids, edition)
-    fig1, fig2, best_transformation = analyze(dfxo)
-    fig1.savefig(OUTPUTDIR + '/' + basename + '_fig1.png')
-    fig1.savefig(OUTPUTDIR + '/' + basename + '_fig1.svg')
-    fig1.savefig(OUTPUTDIR + '/' + basename + '_fig1.pdf')
-    fig2.savefig(OUTPUTDIR + '/' + basename + '_fig2.png')
-    fig2.savefig(OUTPUTDIR + '/' + basename + '_fig2.svg')
-    fig2.savefig(OUTPUTDIR + '/' + basename + '_fig2.pdf')
+    fig1, fig2, fig3, best_transformation = analyze(dfxo)
+    savefig(fig1, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig1.png')))
+    savefig(fig1, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig1.svg')))
+    savefig(fig1, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig1.pdf')))
+    savefig(fig2, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig2.png')))
+    savefig(fig2, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig2.svg')))
+    savefig(fig2, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig2.pdf')))
+    savefig(fig3, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig3.png')))
+    savefig(fig3, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig3.svg')))
+    savefig(fig3, os.path.abspath(os.path.join(OUTPUTDIR, basename + '_fig3.pdf')))
