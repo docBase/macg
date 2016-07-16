@@ -177,6 +177,7 @@ def xs_from_xo(dfxo):
     return dfxo.reset_index(drop=True).rename(columns={j:i for i, j in enumerate(dfxo.columns)})
 
 def plot_transformations(dfxo):
+    print('total number of points: {}\n\n'.format(len(dfxo)))
     dfxs = xs_from_xo(dfxo)
     dfxts, dfxots = get_xots(dfxs)
     plt.close('all')
@@ -205,6 +206,7 @@ def get_best_transformation(dfxots):
     best_transformation = None
     print("dfxot             1 - xt_diff / xt_sum     (xt_sum - xt_diff) / (xt_sum + xt_diff)")
     print("                  correlation              least-absolutes correlation")
+    print("----------------------------------------------------------------------------------")
     for key, dfxot in dfxots.items():
         if best_transformation is None:
             xt_diff = abs(dfxot[0] - dfxot[1]).sum()
@@ -220,6 +222,7 @@ def get_best_transformation(dfxots):
         if correlation > highest_correlation:
             highest_correlation = correlation
             best_transformation = key
+    print("----------------------------------------------------------------------------------")
     print("Best transformation is {}".format(best_transformation))
     return best_transformation, dfxots[best_transformation]
 
