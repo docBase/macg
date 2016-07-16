@@ -74,7 +74,7 @@ def getk50(dfxi, col=None, row1=None, row2=None, precision=DEFAULT_PRECISION):
             k1 = np.float128(1.00000001)
             k2 = np.float128(99999999)
         else:
-            raise Exception(mean_i_1, mean_i_2)
+            return ((k1 + k2) / 2, 0.5, 5)
     else:
         if mean_i_2 > np.float128(0.5):
             k1 = np.float128(1.00000001)
@@ -83,7 +83,7 @@ def getk50(dfxi, col=None, row1=None, row2=None, precision=DEFAULT_PRECISION):
             k1 = np.float128(0.00000001)
             k2 = np.float128(0.99999999)
         else:
-            raise Exception(mean_i_1, mean_i_2)
+            return ((k1 + k2) / 2, 0.5, 6)
     mean_i_1 = get_mean_i(dfxi, k1, row1, row2, col)
     mean_i_2 = get_mean_i(dfxi, k2, row1, row2, col)
     while abs(k2 - k1) > precision:
@@ -203,19 +203,24 @@ def plot_transformations(dfxo):
 def get_best_transformation(dfxots):
     highest_correlation = 0
     best_transformation = None
+    print("dfxot             1 - xt_diff / xt_sum     (xt_sum - xt_diff) / (xt_sum + xt_diff)")
+    print("                  correlation              least-absolutes correlation")
     for key, dfxot in dfxots.items():
         if best_transformation is None:
             xt_diff = abs(dfxot[0] - dfxot[1]).sum()
             xt_sum = abs(dfxot[0] + dfxot[1] - 1).sum()
             correlation = 1 - xt_diff / xt_sum
-            print("original data: ", correlation, ((xt_sum - xt_diff) / (xt_sum + xt_diff) ))
+            least_absolutes_correlation = (xt_sum - xt_diff) / (xt_sum + xt_diff)
+            print("original data    ", '{:<24}'.format(correlation), '{:<24}'.format(least_absolutes_correlation))
         xt_diff = abs(dfxot['xt_0'] - dfxot['xt_1']).sum()
         xt_sum = abs(dfxot['xt_0'] + dfxot['xt_1'] - 1).sum()
         correlation = 1 - xt_diff / xt_sum
-        print("xo / {}: ".format(str(key)), correlation, ((xt_sum - xt_diff) / (xt_sum + xt_diff) ))
+        least_absolutes_correlation = (xt_sum - xt_diff) / (xt_sum + xt_diff)
+        print('xo / {:<11} '.format(str(key)), '{:<24}'.format(correlation), '{:<24}'.format(least_absolutes_correlation))
         if correlation > highest_correlation:
             highest_correlation = correlation
             best_transformation = key
+    print("Best transformation is {}".format(best_transformation))
     return best_transformation, dfxots[best_transformation]
 
 def geometrical_interpolation(col1, col2, jjj):
